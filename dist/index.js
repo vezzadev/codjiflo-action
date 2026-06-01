@@ -43929,7 +43929,7 @@ async function updatePRComment(octokit, owner, repo, prNumber, data) {
  * Find existing CodjiFlo comment on PR.
  */
 async function findExistingComment(octokit, owner, repo, prNumber) {
-    const { data: comments } = await octokit.rest.issues.listComments({
+    const comments = await octokit.paginate(octokit.rest.issues.listComments, {
         owner,
         repo,
         issue_number: prNumber,
@@ -43972,7 +43972,7 @@ function formatCommentBody(data) {
 <details>
 <summary>What is this?</summary>
 
-This comment is automatically updated by the [CodjiFlo GitHub Action](https://github.com/codjiflo/action) to enable force-push resilient code review with iteration tracking.
+This comment is automatically updated by the [CodjiFlo GitHub Action](https://github.com/vezzadev/codjiflo-action) to enable force-push resilient code review with iteration tracking.
 
 The artifact referenced above contains iteration data that the CodjiFlo frontend uses to:
 - Track code changes across force-pushes
@@ -44187,6 +44187,20 @@ class IterationDatabase {
     // --------------------------------------------------------------------------
     // SpanTracker Methods
     // --------------------------------------------------------------------------
+    /**
+     * Get all artifact IDs that have snapshots for a given snapshot range.
+     * Used to determine which artifacts need SpanTracker computation.
+     */
+    getArtifactIdsForSnapshotRange(leftSnapshotIndex, rightSnapshotIndex) {
+        const rows = this.db.prepare(`
+      SELECT DISTINCT artifact_id
+      FROM artifact_snapshots
+      WHERE snapshot_index IN (?, ?)
+      GROUP BY artifact_id
+      HAVING COUNT(DISTINCT snapshot_index) = 2
+    `).all(leftSnapshotIndex, rightSnapshotIndex);
+        return rows.map((row) => row.artifact_id);
+    }
     insertSpanTracker(artifactId, leftSnapshotIndex, rightSnapshotIndex) {
         const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO span_trackers (artifact_id, left_snapshot_index, right_snapshot_index)
@@ -44419,9 +44433,9 @@ async function run() {
             }
             const leftSnapshotIndex = (iteration.revision - 1) * 2;
             const rightSnapshotIndex = leftSnapshotIndex + 1;
-            // Get all artifact IDs for this iteration
-            // TODO: Query actual artifact IDs from database
-            const artifactIds = [];
+            // Get all artifact IDs that have snapshots for this iteration
+            const artifactIds = db.getArtifactIdsForSnapshotRange(leftSnapshotIndex, rightSnapshotIndex);
+            core.info(`Found ${artifactIds.length} artifacts for SpanTracker computation`);
             // Compute SpanTrackers
             core.info('Computing SpanTrackers...');
             const trackerInputs = (0, tracker_1.prepareSpanTrackerInputs)(db, artifactIds, leftSnapshotIndex, rightSnapshotIndex);

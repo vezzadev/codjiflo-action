@@ -72,7 +72,7 @@ async function findExistingComment(
   repo: string,
   prNumber: number
 ): Promise<{ id: number; body: string } | null> {
-  const { data: comments } = await octokit.rest.issues.listComments({
+  const comments = await octokit.paginate(octokit.rest.issues.listComments, {
     owner,
     repo,
     issue_number: prNumber,
@@ -128,7 +128,7 @@ function formatCommentBody(data: CommentData): string {
 <details>
 <summary>What is this?</summary>
 
-This comment is automatically updated by the [CodjiFlo GitHub Action](https://github.com/codjiflo/action) to enable force-push resilient code review with iteration tracking.
+This comment is automatically updated by the [CodjiFlo GitHub Action](https://github.com/vezzadev/codjiflo-action) to enable force-push resilient code review with iteration tracking.
 
 The artifact referenced above contains iteration data that the CodjiFlo frontend uses to:
 - Track code changes across force-pushes
