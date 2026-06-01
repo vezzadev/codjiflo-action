@@ -43994,7 +43994,7 @@ async function updatePRDescription(octokit, owner, repo, prNumber) {
         pull_number: prNumber,
     });
     const currentBody = pr.body || '';
-    const codjifloLink = `https://codjiflo.vza.net/${owner}/${repo}/${prNumber}`;
+    const codjifloLink = `https://codjiflo.net/${owner}/${repo}/${prNumber}`;
     // Check if CodjiFlo link section already exists
     // Match from first marker through to second marker (inclusive)
     const markerRegex = new RegExp(`${PR_DESCRIPTION_MARKER}[\\s\\S]*?${PR_DESCRIPTION_MARKER}`);
